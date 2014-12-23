@@ -183,9 +183,9 @@ def query_gaji_potongan(id):
 
 def sum_of_potongan(potongan):
     n = 0
-    for k in range(11):
+    for k in range(12):
         xfield=str(k+1).zfill(2)
-        n += potongan['amount_%s' % xfield]
+        n += int(float(potongan['amount_%s' % xfield]))
     return n
     
 def import_data(adata):
@@ -212,7 +212,6 @@ def import_data(adata):
                         potongan_dict['amount_01'] = int(float(j[4]))
             
             for k in range(11): 
-                print 'XXXXXX', row.gaji_bersih , sum_of_potongan(potongan_dict)
                 if (row.gaji_bersih-sum_of_potongan(potongan_dict))<15000:
                    xfield = str(12 - k).zfill(2)
                    potongan_dict['amount_%s' % xfield] = 0
@@ -333,6 +332,13 @@ class view_gajipotongan(BaseViews):
     def save_request(self, values, row=None):
         if 'id' in self.request.matchdict:
             values['id'] = self.request.matchdict['id']
+        
+        gaji = 'gaji_bersih' in values and int(float(values['gaji_bersih'])) or 0
+        for k in range(12): 
+            if (gaji-sum_of_potongan(values))<15000:
+                   xfield = str(12 - k).zfill(2)
+                   values['amount_%s' % xfield] = 0      
+        
         row = self.save(values, self.request.user, row)
         self.request.session.flash('Potongan sudah disimpan.')
             
@@ -353,12 +359,12 @@ class view_gajipotongan(BaseViews):
         if req.POST:
             if 'simpan' in req.POST:
                 controls = req.POST.items()
-                print controls
-                row = GajiPotongan.get_by_id(req.params['id'])
-                if row:
-                    self.session.flash('Data Sudah Ada')
-                    return dict(form=form)
-                
+                if 'id' in req.params and req.params['id']:
+                    row = GajiPotongan.get_by_id(req.params['id'])
+                    if row:
+                        self.session.flash('Data Sudah Ada')
+                        return dict(form=form)
+                    
                 try:
                     c = form.validate(controls)
                 except ValidationFailure, e:

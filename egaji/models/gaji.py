@@ -130,7 +130,7 @@ class GajiPegawai(Base, CommonModel):
                       gajiPegawaiModel.unitkd == ses['unit_kd'],
             )
  
-class GajiPotongan(Base, CommonModel):
+class GajiPotongan(Base, DefaultModel):
     __tablename__  = 'gaji_potongan'
     __table_args__ = {'extend_existing':True, 
                       'schema' : 'gaji',}

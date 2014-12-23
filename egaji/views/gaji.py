@@ -88,3 +88,23 @@ class view_gajipegawai(BaseViews):
                     )
             rowTable = DataTables(req, GajiPegawai, query, columns)
             return rowTable.output_result()
+        elif url_dict['act']=='headofnip':
+            nip = 'term' in params and params['term'] or '' 
+            rows = DBSession.query(GajiPegawai.id, GajiPegawai.nip, 
+                      GajiPegawai.nama, GajiPegawai.gaji_bersih
+                      ).filter(
+                      GajiPegawai.tahun == ses['tahun'],
+                      GajiPegawai.bulan == ses['bulan'],
+                      GajiPegawai.unitkd == ses['unit_kd'],
+                      GajiPegawai.nip.ilike('%s%%' % nip) ).all()
+            r = []
+            for k in rows:
+                d={}
+                d['id']          = k[0]
+                d['value']       = k[1]
+                d['nip']         = k[1]
+                d['nama']        = k[2]
+                d['gaji_bersih'] = k[3]
+                r.append(d)
+            print r
+            return r
