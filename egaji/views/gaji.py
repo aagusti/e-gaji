@@ -2,7 +2,7 @@ import os
 import uuid
 from ..tools import row2dict, xls_reader
 from datetime import datetime
-from sqlalchemy import not_, func
+from sqlalchemy import not_, func, text
 from pyramid.view import (
     view_config,
     )
@@ -19,12 +19,45 @@ from ..models import (
     DBSession,
     Group
     )
+    
 from ..models.gaji import GajiPegawai
 
 from datatables import ColumnDT, DataTables
 from ..views.base_view import BaseViews
     
 
+gajiSelect = text("""SELECT * FROM pegawai_gaji 
+              WHERE tahun=:tahun AND bulan=:bulan AND jenis=:jenis""")
+
+sqlinsert = text("""INSERT INTO gaji_pegawai(
+   tahun, bulan, jenis, urut, nip, unitkd, sub, nama, tgl_lahir, 
+   tmp_lahir, jns_kelamin, bank, rekening, npwp, no_pegawai, nojjp, 
+   alamat, namasi, sts_pegawaikd, tmt_pegawai, sts_kwn, sts_sipil, 
+   agama, jml_si, jml_anak, golongankd, tmt_golongan, masakerja, 
+   jbt_fungsikd, jbt_strukturkd, tmt_jabatan, tunj_jab_fungsi, tunj_jab_struktur, 
+   gaji_pokok, tmt_gaji_pokok, tunj_istri, tunj_anak, tunj_beras, 
+   gurukd, operator, tgl_ubah, tunj_kerja, tdtkd, pend_terakhir, 
+   pend_jurusan, v_jab_struktur, pot_iwp, pot_taperum, pot_sewa_rumah, 
+   pot_pangan, pot_korpri, pot_gaji_lebih, pot_hutang, pembulatan, 
+   pph, tunj_umum, tunj_umum_tamb, tunj_otsus, tunj_dt, tunj_askes, 
+   tunj_penghasilan, biaya_jabatan, biaya_pensiun, persen_gaji, 
+   isttu, aktif_kd, ptkp, aktif_tgl, tgl_gaji, tmt_fungsi, penerima_udwudt, 
+   tglbyr_udwudt) 
+   VALUES (:tahun, :bulan, :jenis, :urut, :nip, :unitkd, :sub, :nama, :tgl_lahir, 
+   :tmp_lahir, :jns_kelamin, :bank, :rekening, :npwp, :no_pegawai, :nojjp, 
+   :alamat, :namasi, :sts_pegawaikd, :tmt_pegawai, :sts_kwn, :sts_sipil, 
+   :agama, :jml_si, :jml_anak, :golongankd, :tmt_golongan, :masakerja, 
+   :jbt_fungsikd, :jbt_strukturkd, :tmt_jabatan, :tunj_jab_fungsi, :tunj_jab_struktur, 
+   :gaji_pokok, :tmt_gaji_pokok, :tunj_istri, :tunj_anak, :tunj_beras, 
+   :gurukd, :operator, :tgl_ubah, :tunj_kerja, :tdtkd, :pend_terakhir, 
+   :pend_jurusan, :v_jab_struktur, :pot_iwp, :pot_taperum, :pot_sewa_rumah, 
+   :pot_pangan, :pot_korpri, :pot_gaji_lebih, :pot_hutang, :pembulatan, 
+   :pph, :tunj_umum, :tunj_umum_tamb, :tunj_otsus, :tunj_dt, :tunj_askes, 
+   :tunj_penghasilan, :biaya_jabatan, :biaya_pensiun, :persen_gaji, 
+   :isttu, :aktif_kd, :ptkp, :aktif_tgl, :tgl_gaji, :tmt_fungsi, :penerima_udwudt, 
+   :tglbyr_udwudt)""")
+
+   
 SESS_ADD_FAILED = 'Tambah gaji gagal'
 SESS_EDIT_FAILED = 'Edit gaji gagal'
        
@@ -108,3 +141,23 @@ class view_gajipegawai(BaseViews):
                 r.append(d)
             print r
             return r
+        elif url_dict['act']=='import':
+            self.d['msg'] ='Gagal Import Gagal'
+            engine_mssql = create_engine('mssql+pyodbc:///?odbc_connect={0}'.format( 
+                              urllib.quote_plus(EngineMssql[0])))
+
+            sqlselect = text("""SELECT *
+                FROM pegawai_gaji
+                WHERE tahun=:tahun AND bulan=:bulan AND jenis=:jenis
+                ORDER by nip""")
+            srcs = engine_mssql.execute(sqlselect, tahun=self.session['tahun'], 
+                      bulan=self.session['bulan'], jenis=0).all()
+            for src in srcs.fetchall():
+                gajiPg = GajiPegawai()
+                gajiPg.from_dict(src)
+                DBSession.add(gajiPg)
+                DBSession.flush()
+            DBSession.commit()                  
+                              
+            return self.d
+            
