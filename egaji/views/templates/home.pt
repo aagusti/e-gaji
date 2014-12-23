@@ -3,12 +3,19 @@
 
 <!-- Main component for a primary marketing message or call to action -->
 <div class="well">
-<h1>Pyramid</h1>
+<h1>e-Gaji</h1>
 <p><img src="/static/img/pyramid.png" class="img-float img-thumbnail"/>
-Selamat Datang do Aplikasi <code>${project}</code>
-Aplikasi e-Gaji adalah aplikasi yang digunakan untuk mengelola gaji PNS 
+Selamat Datang di Aplikasi <code>${project}</code>
 
-
+<p>Aplikasi e-Gaji adalah aplikasi yang digunakan untuk mengelola gaji PNS 
+   dimana berfungsi untuk memasukan data potongan baik yang dilakukan oleh 
+   Bendahara Pengeluaran, Pembantu Bendahara Pengeluaran maupun pihak Bank
+   
+<p>Aplikasi ini merupakan aplikasi yang tidak terpisahkan dengan aplikasi yang
+   selama ini digunakan untuk memproses gaji bulanan dimana diantara aplikasi ini
+   saling melengkapi baik data maupun informasi yang ditampilkan.
+   
+<p>Aplikasi e-Gaji diselenggarakan oleh Dinas Pendidikan Kabupaten Tangerang   
 </div><!--well-->
 
 </div>
