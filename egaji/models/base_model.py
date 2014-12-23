@@ -13,6 +13,8 @@ from sqlalchemy.orm import (
     sessionmaker,
     )
 
+EngineMssql = ['']
+    
 from ..models import Base, DefaultModel
 
 class KodeModel(DefaultModel):
