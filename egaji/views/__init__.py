@@ -63,7 +63,7 @@ def view_login(request):
     if authenticated_userid(request):
         return HTTPFound(location=request.route_url('app'))
     schema = Login(validator=login_validator)
-    form = Form(schema, buttons=('login',))
+    form = Form(schema, buttons=('login',), css_class='form-signin  ')
     if 'login' in request.POST: 
         controls = request.POST.items()
         identity = request.POST.get('username')
@@ -74,7 +74,7 @@ def view_login(request):
             request.session['login failed'] = e.render()
             return HTTPFound(location=request.route_url('login'))
         headers = get_login_headers(request, user)        
-        return HTTPFound(location=request.route_url('home'),
+        return HTTPFound(location=request.route_url('app'),
                           headers=headers)
     elif 'login failed' in request.session:
         r = dict(form=request.session['login failed'])

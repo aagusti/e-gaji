@@ -69,7 +69,7 @@ routes = [
     ('password', '/password', 'Change password'),
     
     ('user', '/user', 'Users'),
-    ('user-act', '/user/{act}', 'Users'),
+    ('user-act', '/user/act/{act}', 'Users'),
     ('user-add', '/user/add', 'Tambah user'),
     ('user-edit', '/user/{id}/edit', 'Edit user'),
     ('user-delete', '/user/{id}/delete', 'Hapus user'),

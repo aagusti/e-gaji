@@ -61,8 +61,8 @@
                 <li><a href="/group">Group</a></li>
                 <li><a href="/urusan">Urusan</a></li>
                 <li><a href="/unit">Unit</a></li>
-                <li><a href="/userunit">UserUnit</a></li>
-                <li><a href="/potongan">Jenis Potongan</a></li>
+                <li><a href="/userunit">User Unit</a></li>
+                <li><a href="/userunit">User Group</a></li>
               </ul>
             </li>
 

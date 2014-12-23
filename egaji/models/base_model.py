@@ -2,6 +2,7 @@ from datetime import datetime
 from sqlalchemy import (
     Column,
     Integer,
+    SmallInteger,
     Text,
     DateTime,
     String,
@@ -19,6 +20,12 @@ from ..models import Base, DefaultModel
 
 class KodeModel(DefaultModel):
     kode = Column(String(32))
+    disabled = Column(SmallInteger, nullable=False)
+    created  = Column(DateTime, nullable=False)
+    updated  = Column(DateTime)
+    create_uid  = Column(Integer, nullable=False)
+    update_uid  = Column(Integer)
+    
     @classmethod
     def get_by_kode(kode):
         return cls.query().filter_by(kode=kode).first()

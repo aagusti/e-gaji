@@ -7,7 +7,6 @@ from sqlalchemy import not_, func, text
 from sqlalchemy import create_engine
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.sql.expression import text
-from base_model import EngineMssql
 from pyramid.view import (
     view_config,
     )
@@ -26,6 +25,7 @@ from ..models import (
     )
     
 from ..models.gaji import GajiPegawai
+from ..models.base_model import EngineMssql
 
 from datatables import ColumnDT, DataTables
 from ..views.base_view import BaseViews
@@ -96,7 +96,7 @@ class view_gajipegawai(BaseViews):
     # List #
     ########    
     @view_config(route_name='gaji', renderer='templates/gajipegawai/list.pt',
-                 permission='edit')
+                 permission='read')
     def view_gaji(self):
         return dict(a={})
         
@@ -104,7 +104,7 @@ class view_gajipegawai(BaseViews):
     # Action #
     ##########    
     @view_config(route_name='gaji-act', renderer='json',
-                 permission='edit')
+                 permission='read')
     def gaji_act(self):
         ses = self.request.session
         req = self.request

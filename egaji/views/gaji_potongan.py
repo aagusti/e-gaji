@@ -224,7 +224,7 @@ class view_gajipotongan(BaseViews):
     # List #
     ########    
     @view_config(route_name='gaji-potongan', renderer='templates/gajipotongan/list.pt',
-                 permission='edit')
+                 permission='read')
     def view_list(self):
         return dict(a={})
         
@@ -232,7 +232,7 @@ class view_gajipotongan(BaseViews):
     # Action #
     ##########    
     @view_config(route_name='gaji-potongan-act', renderer='json',
-                 permission='edit')
+                 permission='read')
     def gaji_potongan_act(self):
         ses = self.request.session
         req = self.request
@@ -351,7 +351,7 @@ class view_gajipotongan(BaseViews):
         return r
         
     @view_config(route_name='gaji-potongan-add', renderer='templates/gajipotongan/add.pt',
-                 permission='edit')
+                 permission='add')
     def view_gaji_potongan_add(self):
         req = self.request
         ses = self.session
@@ -449,7 +449,7 @@ class view_gajipotongan(BaseViews):
     # Delete #
     ##########    
     @view_config(route_name='gaji-potongan-delete', renderer='templates/gajipotongan/delete.pt',
-                 permission='edit')
+                 permission='delete')
     def view_potongan_delete(self):
         request = self.request
         q = self.query_id()

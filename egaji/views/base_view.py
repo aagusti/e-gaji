@@ -91,7 +91,7 @@ class BaseViews(object):
         else:
             return chain
 
-@view_config(route_name='change-act', renderer='json', permission='edit')
+@view_config(route_name='change-act', renderer='json', permission='read')
 def change_act(request):
     ses = request.session
     req = request
@@ -102,4 +102,11 @@ def change_act(request):
         ses['tahun'] = 'tahun' in params and params['tahun'] or '2014'
         ses['bulan'] = 'bulan' in params and params['bulan'] or '12'
         return {'success':True}
+        
+########
+# APP Home #
+########
+@view_config(route_name='app', renderer='templates/home-app.pt', permission='read')
+def view_app(request):
+    return dict(project='egaji')
         

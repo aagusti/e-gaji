@@ -16,6 +16,7 @@ from ..models import (
     DBSession,
     User,
     )
+from datatables import ColumnDT, DataTables
 
 
 SESS_ADD_FAILED = 'user add failed'
@@ -25,11 +26,35 @@ SESS_EDIT_FAILED = 'user edit failed'
 # List #
 ########    
 @view_config(route_name='user', renderer='templates/user/list.pt',
-             permission='edit')
+             permission='read')
 def view_list(request):
-    rows = DBSession.query(User).filter(User.id > 0).order_by('email')
-    return dict(rows=rows)
+    #rows = DBSession.query(User).filter(User.id > 0).order_by('email')
+    return dict(project='e-Gaji')
     
+##########                    
+# Action #
+##########    
+@view_config(route_name='user-act', renderer='json',
+             permission='read')
+def gaji_group_act(request):
+    ses = request.session
+    req = request
+    params = req.params
+    url_dict = req.matchdict
+    
+    if url_dict['act']=='grid':
+        columns = []
+        columns.append(ColumnDT('id'))
+        columns.append(ColumnDT('email'))
+        columns.append(ColumnDT('user_name'))
+        columns.append(ColumnDT('status'))
+        columns.append(ColumnDT('last_login_date'))
+        columns.append(ColumnDT('registered_date'))
+        
+        query = DBSession.query(User)
+        rowTable = DataTables(req, User, query, columns)
+        return rowTable.output_result()
+        
 
 #######    
 # Add #
@@ -133,7 +158,7 @@ def session_failed(request, session_name):
     return r
     
 @view_config(route_name='user-add', renderer='templates/user/add.pt',
-             permission='edit')
+             permission='add')
 def view_add(request):
     form = get_form(request, AddSchema)
     if request.POST:
@@ -188,7 +213,7 @@ def view_edit(request):
 # Delete #
 ##########    
 @view_config(route_name='user-delete', renderer='templates/user/delete.pt',
-             permission='edit')
+             permission='delete')
 def view_delete(request):
     q = query_id(request)
     row = q.first()

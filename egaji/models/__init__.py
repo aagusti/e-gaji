@@ -79,7 +79,7 @@ class DefaultModel(CommonModel):
         cls.query_id(id).delete()
 
 
-class Group(GroupMixin, Base):
+class Group(GroupMixin, Base, CommonModel):
     pass
 
 class GroupPermission(GroupPermissionMixin, Base):
@@ -197,11 +197,14 @@ class ExternalIdentity(ExternalIdentityMixin, Base):
 class RootFactory(object):
     def __init__(self, request):
         self.__acl__ = [
-            (Allow, Authenticated, 'view'),
+            (Allow, Authenticated, 'read'),
+            (Allow, Authenticated, 'add'),
             (Allow, Authenticated, 'edit'),
-            (Allow, 'Admin', 'view'),
+            (Allow, 'Admin', 'read'),
+            (Allow, 'Admin', 'add'),
             (Allow, 'Admin', 'edit'),
-            (Allow, 'Staff', 'view'),
+            (Allow, 'Admin', 'delete'),
+            (Allow, 'Staff', 'read'),
             ]
 
 def init_model():

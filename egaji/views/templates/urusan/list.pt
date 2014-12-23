@@ -1,30 +1,27 @@
 <html metal:use-macro="load: ../base-app.pt">
-
-<div metal:fill-slot="content">
-<h4>User</h4>
-<hr>
-<table id="table1" class="table ">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Email</th>
-            <th>User Name</th>
-            <th>Status</th>
-            <th>Last Login</th>
-            <th>Registered Date</th>
-        </tr>
-    </thead>
-    <tbody>
-    </tbody>
-</table>
-</div>
+  <div metal:fill-slot="content">
+    <h4>Urusan Pemerintah Daerah</h4>
+    <hr>
+    <table id="table1" class="table table-bordered table-hover table-condensed">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Kode</th>
+                <th>Nama</th>
+                <th>in-aktif</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+  </div>
   <div metal:fill-slot="scripts">
     <script>
       var mID;
       var mThn;
       var oTable;
       var iPos;
-      var oTableUrl = "/user/act/grid";
+      var oTableUrl = "/urusan/act/grid";
       Number.prototype.formatMoney = function(decPlaces, thouSeparator, decSeparator) {
         var n = this,
             decPlaces = isNaN(decPlaces = Math.abs(decPlaces)) ? 2 : decPlaces,
@@ -64,9 +61,7 @@
               null,
               {"width": "120px"},
               null,
-              {"width": "50px", "sClass":"center"},
-              {"width": "200px", "sClass":"left"},
-              {"width": "200px", "sClass":"left"},
+              {"width": "60px", "sClass":"center"},
           ]
         });
           
@@ -102,20 +97,19 @@
         });
         
         $('#btn_add').click(function () {
-            window.location = '/user/add';
+            window.location = '/urusan/add';
         });
 
         $('#btn_edit').click(function () {
-            if (mID) window.location = '/user/'+mID+'/edit';
+            if (mID) window.location = '/urusan/'+mID+'/edit';
             else alert('Pilih Baris yang akan di edit');
         });
 
         $('#btn_delete').click(function () {
-            if (mID) window.location = '/user/'+mID+'/delete';
+            if (mID) window.location = '/urusan/'+mID+'/delete';
             else alert('Pilih Baris yang akan di hapus');
         });
         })
     </script>
-</div>
-
+  </div>
 </html>
