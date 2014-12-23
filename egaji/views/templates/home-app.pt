@@ -1,0 +1,15 @@
+<html metal:use-macro="load: base-app.pt">
+<div metal:fill-slot="content">
+
+<!-- Main component for a primary marketing message or call to action -->
+<div class="well">
+<h1>e-Gaji</h1>
+<p><img src="/static/img/pyramid.png" class="img-float img-thumbnail"/>
+Selamat Datang do Aplikasi <code>${project}</code>
+Aplikasi e-Gaji adalah aplikasi yang digunakan untuk mengelola gaji PNS 
+
+
+</div><!--well-->
+
+</div>
+</html>

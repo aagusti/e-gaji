@@ -25,7 +25,7 @@ from ..models import (
 ########
 # Home #
 ########
-@view_config(route_name='home', renderer='templates/home.pt', permission='view')
+@view_config(route_name='home', renderer='templates/home.pt')
 def view_home(request):
     return dict(project='egaji')
 
@@ -61,7 +61,7 @@ def get_login_headers(request, user):
 @view_config(route_name='login', renderer='templates/login.pt')
 def view_login(request):
     if authenticated_userid(request):
-        return HTTPFound(location=request.route_url('home'))
+        return HTTPFound(location=request.route_url('app'))
     schema = Login(validator=login_validator)
     form = Form(schema, buttons=('login',))
     if 'login' in request.POST: 

@@ -14,6 +14,7 @@ from ..models import (
     DBSession,
     Base,
     )
+from ..models.gaji import *
     
 import initial_data
 
@@ -90,4 +91,5 @@ def main(argv=sys.argv):
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
     init_model()
+    Base.metadata.create_all(engine)
     initial_data.insert()

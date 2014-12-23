@@ -1,3 +1,4 @@
+import xlrd
 import os
 import re
 from types import (
@@ -103,3 +104,81 @@ def create_now():
     tz = get_timezone()
     return datetime.now(tz)
     
+################
+# Months #
+################
+BULANS = (
+    ('01', 'Januari'),
+    ('02', 'Februari'),
+    ('03', 'Maret'),
+    ('04', 'April'),
+    ('05', 'Mei'),
+    ('06', 'Juni'),
+    ('07', 'Juli'),
+    ('08', 'Agustus'),
+    ('09', 'September'),
+    ('10', 'Oktober'),
+    ('11', 'November'),
+    ('12', 'Desember'),
+    )
+    
+def get_months(request):
+    return BULANS
+
+def email_validator(node, value):
+    name, email = parseaddr(value)
+    if not email or email.find('@') < 0:
+        raise colander.Invalid(node, 'Invalid email format')    
+        
+def row2dict(row):
+    d = {}
+    for column in row.__table__.columns:
+        d[column.name] = str(getattr(row, column.name))
+
+    return d        
+    
+    
+def clean(s):
+    r = ''
+    for ch in s:
+        if ch not in string.printable:
+            ch = ''
+        r += ch
+    return r
+
+def xls_reader(filename):    
+    workbook = xlrd.open_workbook(filename)
+    worksheet = workbook.sheet_by_name('potongan')
+    num_rows = worksheet.nrows - 1
+    num_cells = worksheet.ncols - 1
+    curr_row = -1
+    csv = []
+    while curr_row < num_rows:
+        curr_row += 1
+        row = worksheet.row(curr_row)
+        curr_cell = -1
+        txt = []
+        while curr_cell < num_cells:
+            curr_cell += 1
+            # Cell Types: 0=Empty, 1=Text, 2=Number, 3=Date, 4=Boolean, 5=Error, 6=Blank
+            cell_type = worksheet.cell_type(curr_row, curr_cell)
+            cell_value = worksheet.cell_value(curr_row, curr_cell)
+            if cell_type==1 or cell_type==2:
+                try:
+                    cell_value = str(cell_value)
+                except:
+                    cell_value = '0'
+            else:
+                cell_value = clean(cell_value)
+                
+            if curr_cell==0 and cell_value.strip()=="Tanggal":
+                curr_cell=num_cells
+            elif curr_cell==0 and cell_value.strip()=="":
+                curr_cell = num_cells
+                curr_row = num_rows
+            else:
+                txt.append(cell_value)
+        if txt:
+            csv.append(txt)
+    return csv        
+            
