@@ -195,7 +195,7 @@
               },
               beforeSend: function () {
                 $("#errors").css('display', 'inline', 'important');
-                $("#errors").html("<img src=\'${request.static_url('/static/images/img/ajax-loader.gif')}\' /> Loading...")
+                $("#errors").html("<img src=\'/static/images/img/ajax-loader.gif'\' /> Loading...")
               }
             });
         });
@@ -218,7 +218,7 @@
               },
               beforeSend: function () {
                 $("#errors").css('display', 'inline', 'important');
-                $("#errors").html("<img src=\'${request.static_url('egaji:static/images/ajax-loader.gif')}\' /> Loading...")
+                $("#errors").html("<img src=\'/static/images/ajax-loader.gif'\'/> Loading...")
               }
             });
         });
