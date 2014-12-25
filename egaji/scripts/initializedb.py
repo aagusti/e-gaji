@@ -15,7 +15,7 @@ from ..models import (
     Base,
     )
 from ..models.gaji import *
-    
+from ..models.pemda_model import *    
 import initial_data
 
 

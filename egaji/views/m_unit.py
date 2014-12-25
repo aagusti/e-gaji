@@ -3,6 +3,8 @@ import uuid
 from ..tools import row2dict, xls_reader
 from datetime import datetime
 from sqlalchemy import not_, func
+from sqlalchemy.sql.expression import and_
+from ziggurat_foundations.models import groupfinder
 from pyramid.view import (
     view_config,
     )
@@ -19,17 +21,11 @@ from ..models import (
     DBSession,
     Group
     )
-from ..models.pemda_model import UnitModel, UrusanModel
-
+from ..models.pemda_model import UnitModel, UrusanModel, UserUnitModel
 from datatables import ColumnDT, DataTables
 from ..views.base_view import BaseViews
-    
-
 SESS_ADD_FAILED = 'Tambah unit gagal'
 SESS_EDIT_FAILED = 'Edit unit gagal'
-
-
-                
 class AddSchema(colander.Schema):
     choices = DBSession.query(UrusanModel.id,
                   UrusanModel.nama).order_by(UrusanModel.nama).all()
@@ -47,13 +43,10 @@ class AddSchema(colander.Schema):
                     colander.String())
     disabled = colander.SchemaNode(
                     colander.Boolean())
-
-                    
 class EditSchema(AddSchema):
     id = colander.SchemaNode(colander.String(),
             missing=colander.drop,
             widget=widget.HiddenWidget(readonly=True))
-            
 class view_unit(BaseViews):
     ########                    
     # List #
@@ -62,18 +55,16 @@ class view_unit(BaseViews):
                  permission='read')
     def view_list(self):
         return dict(a={})
-        
     ##########                    
     # Action #
     ##########    
     @view_config(route_name='unit-act', renderer='json',
-                 permission='read')
+                 permission='view')
     def gaji_unit_act(self):
         ses = self.request.session
         req = self.request
         params = req.params
         url_dict = req.matchdict
-        
         if url_dict['act']=='grid':
             columns = []
             columns.append(ColumnDT('id'))
@@ -81,20 +72,76 @@ class view_unit(BaseViews):
             columns.append(ColumnDT('nama'))
             columns.append(ColumnDT('disabled'))
             
-            query = DBSession.query(UnitModel)
+            groups = groupfinder(req.user, req)
+            ids = []
+            if req.user.id==1 or 'group:admin' in groups:
+                query = UnitModel.query() #DBSession.query(UnitModel)
+            else:
+                units = DBSession.query(UserUnitModel.unit_id, 
+                             UserUnitModel.sub_unit, UnitModel.kode
+                             ).join(UnitModel).filter(UnitModel.id==UserUnitModel.unit_id,
+                                    UserUnitModel.user_id==req.user.id).all() 
+
+                for unit in units:
+                    if unit.sub_unit:
+                        rows = DBSession.query(UnitModel.id).filter(UnitModel.kode.ilike('%s%%' % unit.kode)).all()
+                    else:
+                        rows = DBSession.query(UnitModel.id).filter(UnitModel.kode==unit.kode).all()
+                    for i in range(len(rows)):
+                        ids.append(rows[i])
+                query = DBSession.query(UnitModel).filter((UnitModel.id).in_(ids))
             rowTable = DataTables(req, UnitModel, query, columns)
             return rowTable.output_result()
             
         elif url_dict['act']=='changeid':
+            ids  = UserUnitModel.unit_granted(req.user.id, params['unit_id'])
+            if req.user.id>1 and 'g:admin' not in groupfinder(req.user, req)\
+                    and not ids:
+                return {'success':False, 'msg':'Anda tidak boleh mengubah ke unit yang bukan hak akses anda'}
+
             row = UnitModel.get_by_id('unit_id' in params and params['unit_id'] or 0)
             if row:
                 ses['unit_id']=row.id
                 ses['unit_kd']=row.kode
                 ses['unit_nm']=row.nama
-                return {'success':True}
+                return {'success':True, 'msg':'Sukses ubah SKPD'}
                 
-            
-
+        elif url_dict['act']=='headofnama':
+            term = 'term' in params and params['term'] or '' 
+            rows = DBSession.query(UnitModel.id, UnitModel.kode, UnitModel.nama
+                      ).filter(
+                      UnitModel.nama.ilike('%%%s%%' % term) ).all()
+            r = []
+            for k in rows:
+                d={}
+                d['id']          = k[0]
+                d['value']       = k[2]
+                d['kode']        = k[1]
+                d['nama']        = k[2]
+                r.append(d)
+            return r
+        elif url_dict['act']=='import':
+            rows = DBSession.execute("""SELECT a.kode, a.nama, a.passwd, b.unit_id 
+                                        FROM admin.users2 a
+                                        INNER JOIN admin.user_units2 b
+                                        ON a.id = b.id""").all()
+            for kode,nama,passwd, unit_id in rows:
+                user = Users()
+                user.user_name = nama
+                user.user_password = passwd
+                user.email = ''.join([nama,'@tangerangkab.org'])
+                user.status = 1
+                DBSession.add(user)
+                DBSession.flush()
+                if user.id:
+                    user_unit=UserUnitModel()
+                    user_unit.user_id = user.id
+                    user_unit.unit_id = unit_id
+                    user_unit.status  = 1
+                    DBSession.add(user_unit)
+                    DBSession.flush()
+                
+                  
     #######    
     # Add #
     #######
@@ -105,7 +152,6 @@ class view_unit(BaseViews):
             unit = q.first()
         else:
             unit = None
-                
     def get_form(self, class_form, row=None):
         schema = class_form(validator=self.form_validator)
         schema = schema.bind()
@@ -113,7 +159,6 @@ class view_unit(BaseViews):
         if row:
           schema.deserialize(row)
         return Form(schema, buttons=('simpan','batal'))
-        
     def save(self, values, user, row=None):
         if not row:
             row = UnitModel()
@@ -126,21 +171,17 @@ class view_unit(BaseViews):
         DBSession.add(row)
         DBSession.flush()
         return row
-        
     def save_request(self, values, row=None):
         if 'id' in self.request.matchdict:
             values['id'] = self.request.matchdict['id']
         row = self.save(values, self.request.user, row)
         self.request.session.flash('unit sudah disimpan.')
-            
     def route_list(self):
         return HTTPFound(location=self.request.route_url('unit'))
-        
     def session_failed(self, session_name):
         r = dict(form=self.session[session_name])
         del self.session[session_name]
         return r
-        
     @view_config(route_name='unit-add', renderer='templates/unit/add.pt',
                  permission='add')
     def view_unit_add(self):
@@ -160,19 +201,15 @@ class view_unit(BaseViews):
         elif SESS_ADD_FAILED in req.session:
             return self.session_failed(SESS_ADD_FAILED)
         return dict(form=form.render())
-
-        
     ########
     # Edit #
     ########
     def query_id(self):
         return DBSession.query(UnitModel).filter_by(id=self.request.matchdict['id'])
-        
     def id_not_found(self):    
         msg = 'unit ID %s Tidak Ditemukan.' % self.request.matchdict['id']
         request.session.flash(msg, 'error')
         return route_list()
-
     @view_config(route_name='unit-edit', renderer='templates/unit/edit.pt',
                  permission='edit')
     def view_unit_edit(self):
@@ -197,7 +234,6 @@ class view_unit(BaseViews):
             return self.session_failed(SESS_EDIT_FAILED)
         values = row.to_dict()
         return dict(form=form.render(appstruct=values))
-
     ##########
     # Delete #
     ##########    
@@ -207,7 +243,6 @@ class view_unit(BaseViews):
         request = self.request
         q = self.query_id()
         row = q.first()
-        
         if not row:
             return self.id_not_found(request)
         form = Form(colander.Schema(), buttons=('hapus','batal'))
@@ -223,4 +258,3 @@ class view_unit(BaseViews):
             return self.route_list()
         return dict(row=row,
                      form=form.render())
-

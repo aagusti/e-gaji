@@ -27,6 +27,8 @@ from ..models import (
 ########
 @view_config(route_name='home', renderer='templates/home.pt')
 def view_home(request):
+    if authenticated_userid(request):
+        return HTTPFound(location=request.route_url('app'))
     return dict(project='egaji')
 
 

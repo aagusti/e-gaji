@@ -59,10 +59,11 @@
               <ul class="dropdown-menu">
                 <li><a href="/user">User</a></li>
                 <li><a href="/group">Group</a></li>
+                <li><a href="/resource">Resource</a></li>
                 <li><a href="/urusan">Urusan</a></li>
                 <li><a href="/unit">Unit</a></li>
-                <li><a href="/userunit">User Unit</a></li>
-                <li><a href="/userunit">User Group</a></li>
+                <li><a href="/user/unit">User Unit</a></li>
+                <li><a href="/user/group">User Group</a></li>
               </ul>
             </li>
 
@@ -81,7 +82,7 @@
     </div>
 
     <div class="container">
-    
+      <div class="alert alert-danger" style="display: none;" id='errors'></div>
       <div tal:condition="request.session.peek_flash()">
         <div class="alert alert-success" tal:repeat="message request.session.pop_flash()">${message}</div>
       </div>
@@ -99,7 +100,14 @@
     <script src="/static/datatables/media/js/jquery.dataTables.ext.js"></script>
     <script src="/static/datatables/extensions/TableTools/media/js/ZeroClipboard.js"></script>
     <script src="/static/datatables/media/js/dataTables.bootstrap.js"></script>
-        
+    <script>
+        window.setInterval(function() {
+              if ($('#errors').css('display')=='inline'){
+                  $('#errors').delay(2000).fadeOut('slow');
+              }
+        }, 5000);
+
+    </script>
     <div metal:define-slot="scripts"></div>       
   </body>
 </html>

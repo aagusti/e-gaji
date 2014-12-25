@@ -10,8 +10,12 @@ from datetime import datetime
 from sqlalchemy.exc import DBAPIError
 import colander
 from ..models import (
-    DBSession
+    DBSession,
+    UserResourcePermission,
+    Resource,
+    User,
     )
+from ..models.gaji import GajiPegawai
 from datetime import (datetime, date)
 
 from pyjasper.client import JasperGenerator
@@ -73,7 +77,19 @@ class BaseViews(object):
         self.datas['all_unit'] = self.all_unit
         self.datas['unit_kd'] = self.session['unit_kd']
         self.datas['unit_nm'] = self.session['unit_nm']
+        permission = UserResourcePermission()
+        permission.perm_name = "read"
+        permission.user_name = "aagusti"
+        #resource = DBSession.query(User).filter_by(id=1)
+        resource = Resource()
+        resource.resource_name = 'GAJI'
+        resource.resource_type = '1'
+        
+        DBSession.add(resource)
+        request.user.resources.append(resource)
         """
+        
+        
 
     def _DTstrftime(self, chain):
         ret = chain and datetime.strftime(chain, '%d-%m-%Y')
@@ -91,7 +107,7 @@ class BaseViews(object):
         else:
             return chain
 
-@view_config(route_name='change-act', renderer='json', permission='read')
+@view_config(route_name='change-act', renderer='json', permission='view')
 def change_act(request):
     ses = request.session
     req = request
@@ -106,7 +122,7 @@ def change_act(request):
 ########
 # APP Home #
 ########
-@view_config(route_name='app', renderer='templates/home-app.pt', permission='read')
+@view_config(route_name='app', renderer='templates/home-app.pt', permission='view')
 def view_app(request):
     return dict(project='egaji')
         

@@ -1,6 +1,6 @@
 <html metal:use-macro="load: ../base-app.pt">
 <div metal:fill-slot="content">
-<h1>Add User</h1>
+<h3>Tambah User</h3>
 <div tal:content="structure form"/>
 </div>
 </html>

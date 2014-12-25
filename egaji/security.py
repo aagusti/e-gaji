@@ -1,3 +1,4 @@
+import sys
 from pyramid.security import authenticated_userid
 from .models import (
     User,
@@ -15,7 +16,8 @@ def group_finder(login, request):
     r = []        
     for group_id in UserGroup.get_by_user(u):
         group = DBSession.query(Group).get(group_id)
-        r.append(group.group_name)
+        r.append('g:%s' % group.group_name)
+    print r
     return r
         
 def get_user(request):

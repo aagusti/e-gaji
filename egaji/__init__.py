@@ -1,3 +1,4 @@
+import sys
 import locale
 from pyramid.config import Configurator
 from pyramid_beaker import session_factory_from_settings
@@ -10,6 +11,7 @@ from pyramid.interfaces import IRoutesMapper
 from pyramid.httpexceptions import (
     default_exceptionresponse_view,
     HTTPFound,
+    HTTPNotFound
     )
 
 from sqlalchemy import engine_from_config
@@ -20,6 +22,9 @@ from .models import (
     Base,
     init_model,
     )
+from .models.base_model import (
+    RouteModel)
+    
 from .tools import DefaultTimeZone, get_months
 
 
@@ -46,11 +51,18 @@ class RemoveSlashNotFoundViewFactory(object):
                     if qs:
                         noslash_path += '?' + qs
                     return HTTPFound(location=noslash_path)
-        return self.notfound_view(context, request)
+        #routes = request.registry.settings.getRoutes() 
+        #print list(routes)
+        #return HTTPNotFound()
+        request.session.flash('Halaman yang anda cari tidak ditemukan','error')
+        
+        return request.user and HTTPFound('/app') or HTTPFound('/') #self.notfound_view(context, request)
     
     
 # https://groups.google.com/forum/#!topic/pylons-discuss/QIj4G82j04c
 def url_has_permission(request, permission):
+    print 'P******',permission, request.context, request
+    sys.exit()
     return has_permission(permission, request.context, request)
 
 @subscriber(BeforeRender)
@@ -62,66 +74,74 @@ def get_title(request):
     return titles[route_name]
 
 routes = [    
-    ('home', '/', 'Home'),
-    ('app', '/app', 'Aplikasi'),
-    ('login', '/login', 'Login'),
-    ('logout', '/logout', None),
-    ('password', '/password', 'Change password'),
+    ('home', '/', 'Home',''), #resource_id
+    ('app', '/app', 'Aplikasi',''),
+    ('login', '/login', 'Login',''),
+    ('logout', '/logout', 'Logout',''),
+    ('password', '/password', 'Change password',''),
     
-    ('user', '/user', 'Users'),
-    ('user-act', '/user/act/{act}', 'Users'),
-    ('user-add', '/user/add', 'Tambah user'),
-    ('user-edit', '/user/{id}/edit', 'Edit user'),
-    ('user-delete', '/user/{id}/delete', 'Hapus user'),
+    ('user', '/user', 'Users','egaji.models.AdminFactory'),
+    ('user-act', '/user/act/{act}', 'Users','egaji.models.AdminFactory'),
+    ('user-add', '/user/add', 'Tambah user','egaji.models.AdminFactory'),
+    ('user-edit', '/user/{id}/edit', 'Edit user','egaji.models.AdminFactory'),
+    ('user-delete', '/user/{id}/delete', 'Hapus user','egaji.models.AdminFactory'),
 
-    ('change-act', '/change/{act}', 'change'),
-    ('group', '/group', 'Groups'),
-    ('group-act', '/group/act/{act}', ''),
-    ('group-add', '/group/add', 'Tambah group'),
-    ('group-edit', '/group/{id}/edit', 'Edit group'),
-    ('group-delete', '/group/{id}/delete', 'Hapus group'),
-
-    ('urusan', '/urusan', 'urusans'),
-    ('urusan-add', '/urusan/add', 'Tambah urusan'),
-    ('urusan-edit', '/urusan/{id}/edit', 'Edit urusan'),
-    ('urusan-delete', '/urusan/{id}/delete', 'Hapus urusan'),
-    ('urusan-act', '/urusan/act/{act}', 'urusans'),
-
-    ('unit', '/unit', 'units'),
-    ('unit-add', '/unit/add', 'Tambah unit'),
-    ('unit-edit', '/unit/{id}/edit', 'Edit unit'),
-    ('unit-delete', '/unit/{id}/delete', 'Hapus unit'),
-    ('unit-act', '/unit/act/{act}', 'units'),
+    ('change-act', '/change/{act}', 'change',''),
     
-    ('potongan', '/potongan', 'potongans'),
-    ('potongan-add', '/potongan/add', 'Tambah potongan'),
-    ('potongan-edit', '/potongan/{id}/edit', 'Edit potongan'),
-    ('potongan-delete', '/potongan/{id}/delete', 'Hapus potongan'),
-    ('potongan-act', '/potongan/act/{act}', 'potongans'),
+    ('group', '/group', 'Groups','egaji.models.AdminFactory'),
+    ('group-act', '/group/act/{act}', '','egaji.models.AdminFactory'),
+    ('group-add', '/group/add', 'Tambah group','egaji.models.AdminFactory'),
+    ('group-edit', '/group/{id}/edit', 'Edit group','egaji.models.AdminFactory'),
+    ('group-delete', '/group/{id}/delete', 'Hapus group','egaji.models.AdminFactory'),
 
-    ('gaji', '/gaji', 'Gaji'),
-    ('gaji-act', '/gaji/act/{act}', 'Gaji Action'),
-    
-    ('gaji-potongan', '/gaji-potongan', 'Potongan Gaji'),
-    ('gaji-potongan-add', '/gaji-potongan/add', 'Tambah Potongan'),
-    ('gaji-potongan-edit', '/gaji-potongan/{id}/edit', 'Edit Potongan'),
-    ('gaji-potongan-delete', '/gaji-potongan/{id}/delete', 'Hapus Potongan'),
-    ('gaji-potongan-act', '/gaji-potongan/act/{act}', ''),
+    ('urusan', '/urusan', 'urusans','egaji.models.AdminFactory'),
+    ('urusan-add', '/urusan/add', 'Tambah urusan','egaji.models.AdminFactory'),
+    ('urusan-edit', '/urusan/{id}/edit', 'Edit urusan','egaji.models.AdminFactory'),
+    ('urusan-delete', '/urusan/{id}/delete', 'Hapus urusan','egaji.models.AdminFactory'),
+    ('urusan-act', '/urusan/act/{act}', 'Action','egaji.models.AdminFactory'),
 
+    ('unit', '/unit', 'units','egaji.models.AdminFactory'),
+    ('unit-add', '/unit/add', 'Tambah unit','egaji.models.AdminFactory'),
+    ('unit-edit', '/unit/{id}/edit', 'Edit unit','egaji.models.AdminFactory'),
+    ('unit-delete', '/unit/{id}/delete', 'Hapus unit','egaji.models.AdminFactory'),
+    ('unit-act', '/unit/act/{act}', 'AdminFactory','egaji.models.AdminFactory'),
+
+    ('user-unit', '/user/unit', 'User Unit','egaji.models.AdminFactory'),
+    ('user-unit-act', '/user/unit/act/{act}', 'Action','egaji.models.AdminFactory'),
+    ('user-unit-add', '/user/unit/add', 'Tambah user unit','egaji.models.AdminFactory'),
+    ('user-unit-edit', '/user/unit/{id}/edit', 'Edit user unit','egaji.models.AdminFactory'),
+    ('user-unit-delete', '/user/unit/{id}/delete', 'Hapus user unit','egaji.models.AdminFactory'),
+
+    ('user-group', '/user/group', 'User group','egaji.models.AdminFactory'),
+    ('user-group-act', '/user/group/act/{act}', 'Action','egaji.models.AdminFactory'),
+    ('user-group-add', '/user/group/add', 'Tambah user group','egaji.models.AdminFactory'),
+    ('user-group-edit', '/user/group/{id}/edit', 'Edit user group','egaji.models.AdminFactory'),
+    ('user-group-delete', '/user/group/{id}/delete', 'Hapus user group','egaji.models.AdminFactory'),
+
+    ('gaji', '/gaji', 'Gaji', 'egaji.models.GajiFactory',),
+    ('gaji-act', '/gaji/act/{act}', 'Action','egaji.models.GajiFactory'),
+    ('gaji-csv', '/gaji/csv', 'CSV','egaji.models.GajiFactory'),
     
+    ('gaji-potongan', '/gaji-potongan', 'Potongan Gaji','egaji.models.GajiFactory'),
+    ('gaji-potongan-add', '/gaji-potongan/add', 'Tambah Potongan','egaji.models.GajiFactory'),
+    ('gaji-potongan-edit', '/gaji-potongan/{id}/edit', 'Edit Potongan','egaji.models.GajiFactory'),
+    ('gaji-potongan-delete', '/gaji-potongan/{id}/delete', 'Hapus Potongan','egaji.models.GajiFactory'),
+    ('gaji-potongan-act', '/gaji-potongan/act/{act}', '','egaji.models.GajiFactory'),
+    ('gaji-potongan-csv', '/gaji-potongan/csv', 'CSV','egaji.models.GajiFactory'),
     ]
 
 main_title = 'egaji'
 titles = {}
-for name, path, title in routes:
-    if title:
-        titles[name] = ' - '.join([main_title, title])
+#for name, path, title, factory in routes2:
+#    if title:
+#        titles[name] = ' - '.join([main_title, title])
+
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
     engine = engine_from_config(settings, 'sqlalchemy.')
-    engine.echo = True
+    #engine.echo = True
     DBSession.configure(bind=engine)
     Base.metadata.bind = engine
     init_model()
@@ -135,6 +155,7 @@ def main(global_config, **settings):
     config = Configurator(settings=settings,
                           root_factory='egaji.models.RootFactory',
                           session_factory=session_factory)
+                          
     config.include('pyramid_beaker')                          
     config.include('pyramid_chameleon')
 
@@ -150,7 +171,27 @@ def main(global_config, **settings):
                           
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_static_view('deform_static', 'deform:static')
-    for name, path, title in routes:
-        config.add_route(name, path)
+    
+    config.add_renderer('csv', '.tools.CSVRenderer')
+    
+    #routes = DBSession.query(RouteModel.kode, RouteModel.path, RouteModel.nama, RouteModel.factory).all()
+    """
+    for route in routes:
+        if route.factory: 
+            config.add_route(route.kode, route.path, factory=(route.factory).encode("utf8"))
+        else:
+            config.add_route(route.kode, route.path)
+    """    
+    #    if route.nama:
+    #        titles[route.kode] = route.nama #' - '.join([main_title, title])
+    
+    for name, path, title, factory in routes:
+        if factory: 
+            config.add_route(name, path, factory=factory)
+        else:
+            config.add_route(name, path)
+        if name:
+            titles[name] = ' - '.join([path, title])
+    print list(title)
     config.scan()
     return config.make_wsgi_app()

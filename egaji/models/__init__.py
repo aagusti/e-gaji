@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime
 from sqlalchemy import (
     Column,
@@ -24,6 +25,7 @@ from pyramid.security import (
     Allow,
     Authenticated,
     Everyone,
+    ALL_PERMISSIONS
     )
 from ..tools import as_timezone
 
@@ -86,7 +88,7 @@ class GroupPermission(GroupPermissionMixin, Base):
     pass
 
 
-class UserGroup(UserGroupMixin, Base):
+class UserGroup(UserGroupMixin, Base, CommonModel):
     @classmethod
     def get_by_email(cls, email):
         user = User.get_by_email(email)
@@ -139,7 +141,7 @@ class UserGroup(UserGroupMixin, Base):
 class GroupResourcePermission(GroupResourcePermissionMixin, Base):
     pass
 
-class Resource(ResourceMixin, Base):
+class Resource(ResourceMixin, Base, CommonModel):
     pass
 
 class UserPermission(UserPermissionMixin, Base):
@@ -154,7 +156,8 @@ class User(UserMixin, BaseModel, CommonModel, Base):
     registered_date = Column(DateTime(timezone=True),
                              nullable=False,
                              default=datetime.utcnow)
-
+    #units = relationship("UnitModel"
+    
     def _get_password(self):
         return self._password
 
@@ -193,20 +196,52 @@ class User(UserMixin, BaseModel, CommonModel, Base):
 class ExternalIdentity(ExternalIdentityMixin, Base):
     pass
     
-
 class RootFactory(object):
     def __init__(self, request):
-        self.__acl__ = [
-            (Allow, Authenticated, 'read'),
-            (Allow, Authenticated, 'add'),
-            (Allow, Authenticated, 'edit'),
-            (Allow, 'Admin', 'read'),
-            (Allow, 'Admin', 'add'),
-            (Allow, 'Admin', 'edit'),
-            (Allow, 'Admin', 'delete'),
-            (Allow, 'Staff', 'read'),
-            ]
+        self.__acl__ = [(Allow, 'Admin', ALL_PERMISSIONS), 
+                        (Allow, Authenticated, 'view'),]
 
+class GajiFactory(RootFactory):
+    def __init__(self, request):
+        super(GajiFactory, self ).__init__(request)
+        self.__acl__.append((Allow, 'g:gaji', 'read'))
+        self.__acl__.append((Allow, 'g:gaji', 'add'))
+        self.__acl__.append((Allow, 'g:gaji', 'edit'))
+        self.__acl__.append((Allow, 'g:gaji', 'delete'))
+        
+        self.__acl__.append((Allow, 'g:bank', 'read'))
+        self.__acl__.append((Allow, 'g:bank', 'add'))
+        self.__acl__.append((Allow, 'g:bank', 'edit'))
+        
+        self.__acl__.append((Allow, 'g:bp', 'read'))
+        self.__acl__.append((Allow, 'g:bp', 'add'))
+        self.__acl__.append((Allow, 'g:bp', 'edit'))
+        
+        
+class AdminFactory(RootFactory):
+    def __init__(self, request):
+        super(AdminFactory, self ).__init__(request)
+        self.__acl__.append((Allow, 'g:admin', 'read'))
+        self.__acl__.append((Allow, 'g:admin', 'add'))
+        self.__acl__.append((Allow, 'g:admin', 'edit'))
+        self.__acl__.append((Allow, 'g:admin', 'delete'))
+        print request.url
+        
+class ResourceFactory(RootFactory):
+    def __init__(self, request):
+        super( ResourceFactory, self ).__init__(request)
+        route = request.matched_route
+        rname = route.name
+       
+        #self.resource = Resource.by_resource_name(rname)
+        if not self.resource:
+            request.session.flash('Anda tidak punya hak akses','error')
+            raise HTTPNotFound()
+        if self.resource and request.user:
+            self.__acl__ = self.resource.__acl__
+            for perm_user, perm_name in self.resource.perms_for_user(request.user):
+                self.__acl__.append((Allow, perm_user, perm_name,))
+            
 def init_model():
     ziggurat_model_init(User, Group, UserGroup, GroupPermission, UserPermission,
                    UserResourcePermission, GroupResourcePermission, Resource,

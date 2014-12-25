@@ -16,16 +16,21 @@ from ..models import (
     DBSession,
     User,
     )
+from ..models.pemda_model import (
+    UnitModel,
+    UserUnitModel,
+    )
+    
 from datatables import ColumnDT, DataTables
 
 
-SESS_ADD_FAILED = 'user add failed'
-SESS_EDIT_FAILED = 'user edit failed'
+SESS_ADD_FAILED = 'Tambah user gagal'
+SESS_EDIT_FAILED = 'Edit user gagal'
 
 ########                    
 # List #
 ########    
-@view_config(route_name='user', renderer='templates/user/list.pt',
+@view_config(route_name='user-unit', renderer='templates/userunit/list.pt',
              permission='read')
 def view_list(request):
     #rows = DBSession.query(User).filter(User.id > 0).order_by('email')
@@ -34,9 +39,9 @@ def view_list(request):
 ##########                    
 # Action #
 ##########    
-@view_config(route_name='user-act', renderer='json',
+@view_config(route_name='user-unit-act', renderer='json',
              permission='read')
-def gaji_group_act(request):
+def usr_unit_act(request):
     ses = request.session
     req = request
     params = req.params
@@ -50,22 +55,15 @@ def gaji_group_act(request):
         columns.append(ColumnDT('status'))
         columns.append(ColumnDT('last_login_date'))
         columns.append(ColumnDT('registered_date'))
+        columns.append(ColumnDT('nama'))
         
-        query = DBSession.query(User)
+        query = DBSession.query(User.id, User.user_name, User.email, User.status,
+                                User.last_login_date, User.registered_date,
+                                UnitModel.nama).outerjoin(UserUnitModel).outerjoin(UnitModel)
+        
         rowTable = DataTables(req, User, query, columns)
         return rowTable.output_result()
-    elif url_dict['act']=='headofnama':
-        term = 'term' in params and params['term'] or '' 
-        rows = DBSession.query(User.id, User.user_name
-                  ).filter(
-                  User.user_name.ilike('%%%s%%' % term) ).all()
-        r = []
-        for k in rows:
-            d={}
-            d['id']          = k[0]
-            d['value']       = k[1]
-            r.append(d)
-        return r        
+        
 
 #######    
 # Add #
@@ -78,12 +76,12 @@ def email_validator(node, value):
 def form_validator(form, value):
     def err_email():
         raise colander.Invalid(form,
-            'Email %s already used by user ID %d' % (
+            'Email %s sudah digunakan oleh user ID %d' % (
                 value['email'], found.id))
 
     def err_name():
         raise colander.Invalid(form,
-            'User name %s already used by ID %d' % (
+            'Nama user %s sudah digunakan oleh ID %d' % (
                 value['user_name'], found.id))
                 
     if 'id' in form.request.matchdict:
@@ -118,6 +116,11 @@ STATUS = (
     )    
 
 class AddSchema(colander.Schema):
+    unit_widget = widget.AutocompleteInputWidget(
+            size=60,
+            values = '/unit/act/headofnama',
+            min_length=1)
+
     email = colander.SchemaNode(colander.String(),
                                 validator=email_validator)
     user_name = colander.SchemaNode(
@@ -131,7 +134,24 @@ class AddSchema(colander.Schema):
                     widget=widget.PasswordWidget(),
                     missing=colander.drop)
 
-
+    unit_nm = colander.SchemaNode(
+                    colander.String(),
+                    widget=unit_widget,
+                    missing=colander.drop,
+                    oid = "unit_nm",
+                    )
+    unit_id = colander.SchemaNode(
+                    colander.Integer(),
+                    widget=widget.HiddenWidget(),
+                    missing=colander.drop,
+                    oid = "unit_id")
+                                    
+                    
+    sub_unit = colander.SchemaNode(
+                    colander.Boolean(),
+                    missing=colander.drop,
+                    )                
+                    
 class EditSchema(AddSchema):
     id = colander.SchemaNode(colander.String(),
             missing=colander.drop,
@@ -142,7 +162,7 @@ def get_form(request, class_form):
     schema = class_form(validator=form_validator)
     schema = schema.bind(daftar_status=STATUS)
     schema.request = request
-    return Form(schema, buttons=('save','cancel'))
+    return Form(schema, buttons=('simpan','batal'))
     
 def save(values, user, row=None):
     if not row:
@@ -152,6 +172,16 @@ def save(values, user, row=None):
         row.password = values['password']
     DBSession.add(row)
     DBSession.flush()
+    if values['unit_id']:
+        if row.units:
+            row_unit = UserUnitModel.query_user_id(row.id).first()
+        else:
+            row_unit = UserUnitModel()
+            row_unit.user_id = row.id
+        row_unit.from_dict(values)
+        row_unit.sub_unit = 'sub_unit' in values and values['sub_unit'] and 1 or 0
+        DBSession.add(row_unit)
+        DBSession.flush()
     return row
     
 def save_request(values, request, row=None):
@@ -161,19 +191,19 @@ def save_request(values, request, row=None):
     request.session.flash('User %s has been saved.' % row.email)
         
 def route_list(request):
-    return HTTPFound(location=request.route_url('user'))
+    return HTTPFound(location=request.route_url('user-unit'))
     
 def session_failed(request, session_name):
     r = dict(form=request.session[session_name])
     del request.session[session_name]
     return r
     
-@view_config(route_name='user-add', renderer='templates/user/add.pt',
+@view_config(route_name='user-unit-add', renderer='templates/userunit/add.pt',
              permission='add')
 def view_add(request):
     form = get_form(request, AddSchema)
     if request.POST:
-        if 'save' in request.POST:
+        if 'simpan' in request.POST:
             controls = request.POST.items()
             try:
                 c = form.validate(controls)
@@ -197,7 +227,7 @@ def id_not_found(request):
     request.session.flash(msg, 'error')
     return route_list(request)
 
-@view_config(route_name='user-edit', renderer='templates/user/edit.pt',
+@view_config(route_name='user-unit-edit', renderer='templates/userunit/edit.pt',
              permission='edit')
 def view_edit(request):
     row = query_id(request).first()
@@ -205,25 +235,31 @@ def view_edit(request):
         return id_not_found(request)
     form = get_form(request, EditSchema)
     if request.POST:
-        if 'save' in request.POST:
+        if 'simpan' in request.POST:
             controls = request.POST.items()
             try:
                 c = form.validate(controls)
             except ValidationFailure, e:
                 request.session[SESS_EDIT_FAILED] = e.render()               
-                return HTTPFound(location=request.route_url('user-edit',
+                return HTTPFound(location=request.route_url('user-unit-edit',
                                   id=row.id))
             save_request(dict(controls), request, row)
         return route_list(request)
     elif SESS_EDIT_FAILED in request.session:
         return session_failed(request, SESS_EDIT_FAILED)
     values = row.to_dict()
+    if row.units:
+        row_unit = UserUnitModel.query_user_id(row.id).first()
+        values['sub_unit'] = row_unit.sub_unit
+        values['unit_id'] = row_unit.unit_id
+        values['unit_nm'] = row_unit.units.nama
+        
     return dict(form=form.render(appstruct=values))
 
 ##########
 # Delete #
 ##########    
-@view_config(route_name='user-delete', renderer='templates/user/delete.pt',
+@view_config(route_name='user-unit-delete', renderer='templates/userunit/delete.pt',
              permission='delete')
 def view_delete(request):
     q = query_id(request)
@@ -234,6 +270,7 @@ def view_delete(request):
     if request.POST:
         if 'delete' in request.POST:
             msg = 'User ID %d %s has been deleted.' % (row.id, row.email)
+            q.units.delete()
             q.delete()
             DBSession.flush()
             request.session.flash(msg)

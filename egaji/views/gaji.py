@@ -25,6 +25,7 @@ from ..models import (
     )
     
 from ..models.gaji import GajiPegawai
+from ..models.pemda_model import UserUnitModel, UnitModel
 from ..models.base_model import EngineMssql
 
 from datatables import ColumnDT, DataTables
@@ -121,11 +122,17 @@ class view_gajipegawai(BaseViews):
             columns.append(ColumnDT('gaji_bersih',  filter=self._number_format))
             query = DBSession.query(GajiPegawai).filter(
                       GajiPegawai.tahun == ses['tahun'],
-                      GajiPegawai.bulan == ses['bulan'],
-                      GajiPegawai.unitkd == ses['unit_kd'],
+                      GajiPegawai.bulan == ses['bulan']
                     )
+            rows = UserUnitModel.get_filtered(self.request)
+            if rows and rows.sub_unit:
+                query = query.filter(GajiPegawai.unitkd.like( '%s%%' % ses['unit_kd']))
+            else:
+                query = query.filter(GajiPegawai.unitkd== ses['unit_kd'])
+
             rowTable = DataTables(req, GajiPegawai, query, columns)
             return rowTable.output_result()
+            
         elif url_dict['act']=='headofnip':
             nip = 'term' in params and params['term'] or '' 
             rows = DBSession.query(GajiPegawai.id, GajiPegawai.nip, 
@@ -144,7 +151,6 @@ class view_gajipegawai(BaseViews):
                 d['nama']        = k[2]
                 d['gaji_bersih'] = k[3]
                 r.append(d)
-            print r
             return r
         elif url_dict['act']=='import':
             self.d['msg'] ='Gagal Import Gagal'
@@ -166,3 +172,36 @@ class view_gajipegawai(BaseViews):
                               
             return self.d
             
+    ##########                    
+    # CSV #
+    ##########    
+        
+    @view_config(route_name='gaji-csv', renderer='csv',
+                 permission='read')
+    def gaji_csv(self):
+      q = DBSession.query(GajiPegawai.tahun,GajiPegawai.bulan, 
+                    GajiPegawai.nip, GajiPegawai.nama, GajiPegawai.gaji_kotor,
+                    GajiPegawai.potongan, GajiPegawai.gaji_bersih)
+      rows = UserUnitModel.get_filtered(self.request)
+      if rows and rows.sub_unit:
+          q = q.filter(GajiPegawai.unitkd.like( '%s%%' % self.request.session['unit_kd']))
+      else:
+          q = q.filter(GajiPegawai.unitkd== self.request.session['unit_kd'])
+         
+      r = q.first()
+      header = r.keys()
+      query = q.all()
+      rows = []
+      for item in query:
+          rows.append(list(item))
+
+
+      # override attributes of response
+      filename = 'report.csv'
+      self.request.response.content_disposition = 'attachment;filename=' + filename
+
+      return {
+        'header': header,
+        'rows': rows,
+      }
+    

@@ -220,7 +220,7 @@
           '	<button id="btn_add" class="btn btn btn-primary" type="button">Tambah</button>',
           '	<button id="btn_edit" class="btn btn btn-primary" type="button">Edit</button>',
           '	<button id="btn_delete" class="btn btn btn-danger" type="button">Hapus</button>',
-          '	<button id="btn_pdf" class="btn btn btn-warning" type="button">PDF</button>',
+          '	<!--button id="btn_pdf" class="btn btn btn-warning" type="button">PDF</button-->',
           '	<button id="btn_csv" class="btn btn btn-default" type="button">CSV</button>',
           '	&nbsp;',
           '</div>',
@@ -262,6 +262,9 @@
             else alert('Pilih Baris yang akan di hapus');
         });
 
+        $('#btn_csv').click(function () {
+            window.location = '/gaji-potongan/csv';
+        });
         
         $('#bulan').change(function () {
             $.ajax({

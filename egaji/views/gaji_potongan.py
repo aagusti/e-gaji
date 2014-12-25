@@ -2,7 +2,7 @@ import os
 import uuid
 from ..tools import row2dict, xls_reader
 from datetime import datetime
-from sqlalchemy import not_, func
+from sqlalchemy import not_, func, text
 from pyramid.view import (
     view_config,
     )
@@ -23,6 +23,8 @@ from ..models.gaji import GajiPotongan, GajiPegawai
 
 from datatables import ColumnDT, DataTables
 from ..views.base_view import BaseViews
+from ..models.pemda_model import (
+    UserUnitModel, UnitModel)
     
 
 SESS_ADD_FAILED = 'Tambah potongan gaji gagal'
@@ -265,8 +267,12 @@ class view_gajipotongan(BaseViews):
                        ).join(GajiPotongan).filter(
                       GajiPegawai.tahun == ses['tahun'],
                       GajiPegawai.bulan == ses['bulan'],
-                      GajiPegawai.unitkd == ses['unit_kd'],
                     )
+            rows = UserUnitModel.get_filtered(self.request)
+            if rows and rows.sub_unit:
+                query = query.filter(GajiPegawai.unitkd.like( '%s%%' % self.request.session['unit_kd']))
+            else:
+                query = query.filter(GajiPegawai.unitkd== self.request.session['unit_kd'])
             rowTable = DataTables(req, GajiPegawai, query, columns)
             return rowTable.output_result()
         elif url_dict['act']=='upload':
@@ -471,3 +477,42 @@ class view_gajipotongan(BaseViews):
         return dict(row=row,
                      form=form.render())
 
+    ##########                    
+    # CSV #
+    ##########    
+        
+    @view_config(route_name='gaji-potongan-csv', renderer='csv',
+                 permission='read')
+    def gaji_potongan_csv(self):
+        query = DBSession.query(GajiPegawai.id, GajiPegawai.nip, GajiPegawai.nama, GajiPegawai.gaji_bersih,
+                   GajiPotongan.amount_01, GajiPotongan.amount_02, GajiPotongan.amount_03,
+                   GajiPotongan.amount_04, GajiPotongan.amount_05, GajiPotongan.amount_06,
+                   GajiPotongan.amount_07, GajiPotongan.amount_08, GajiPotongan.amount_09,
+                   GajiPotongan.amount_10, GajiPotongan.amount_11, GajiPotongan.amount_12,
+                   ).join(GajiPotongan).filter(
+                  GajiPegawai.tahun == self.request.session['tahun'],
+                  GajiPegawai.bulan == self.request.session['bulan'],
+                )
+        rows = UserUnitModel.get_filtered(self.request)
+        if rows and rows.sub_unit:
+            query = query.filter(GajiPegawai.unitkd.like( '%s%%' % self.request.session['unit_kd']))
+        else:
+            query = query.filter(GajiPegawai.unitkd== self.request.session['unit_kd'])
+
+        r = query.first()
+        header = r.keys()
+        query = query.all()
+        rows = []
+        for item in query:
+            rows.append(list(item))
+
+
+        # override attributes of response
+        filename = 'report.csv'
+        self.request.response.content_disposition = 'attachment;filename=' + filename
+
+        return {
+          'header': header,
+          'rows': rows,
+        }
+    

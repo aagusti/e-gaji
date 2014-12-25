@@ -149,6 +149,7 @@
         var tb_array = [
           '<div class="btn-group pull-left">',
           '	<button id="btn_import" class="btn btn btn-primary" type="button">Import</button>',
+          '	<button id="btn_csv" class="btn btn btn-primary" type="button">CSV</button>',
           '	&nbsp;',
           '</div>',
         ];
@@ -200,6 +201,9 @@
             });
         });
 
+        $('#btn_csv').click(function () {
+            window.location = '/gaji/csv';
+        });
         
         $('#bulan').change(function () {
             $.ajax({
